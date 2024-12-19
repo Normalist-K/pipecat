@@ -9,6 +9,10 @@ import os
 import sys
 
 import aiohttp
+from dotenv import load_dotenv
+from loguru import logger
+
+import aiohttp
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import LLMMessagesFrame
 from pipecat.pipeline.pipeline import Pipeline
@@ -26,9 +30,6 @@ from pipecat.transports.network.websocket_server import (
 
 from styletts2 import StyleTTS2Service
 
-from loguru import logger
-
-from dotenv import load_dotenv
 
 load_dotenv(override=True)
 

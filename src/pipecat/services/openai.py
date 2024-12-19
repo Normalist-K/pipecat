@@ -294,7 +294,10 @@ class BaseOpenAILLMService(LLMService):
         elif isinstance(frame, LLMMessagesFrame):
             context = OpenAILLMContext.from_messages(frame.messages)
         elif isinstance(frame, VisionImageRawFrame):
-            context = OpenAILLMContext.from_image_frame(frame)
+            context = OpenAILLMContext()
+            context.add_image_frame_message(
+                format=frame.format, size=frame.size, image=frame.image, text=frame.text
+            )
         elif isinstance(frame, LLMUpdateSettingsFrame):
             await self._update_settings(frame.settings)
         else:
@@ -556,7 +559,6 @@ class OpenAIAssistantContextAggregator(LLMAssistantContextAggregator):
                     self._context.add_message(
                         {
                             "role": "assistant",
-                            "content": "",  # content field required for Grok function calling
                             "tool_calls": [
                                 {
                                     "id": frame.tool_call_id,

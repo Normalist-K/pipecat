@@ -6,8 +6,9 @@
 
 import dataclasses
 
-import pipecat.frames.protobufs.frames_pb2 as frame_protos
+from loguru import logger
 
+import pipecat.frames.protobufs.frames_pb2 as frame_protos
 from pipecat.frames.frames import (
     Frame,
     InputAudioRawFrame,
@@ -16,8 +17,6 @@ from pipecat.frames.frames import (
     TranscriptionFrame,
 )
 from pipecat.serializers.base_serializer import FrameSerializer, FrameSerializerType
-
-from loguru import logger
 
 
 class ProtobufFrameSerializer(FrameSerializer):
@@ -90,14 +89,14 @@ class ProtobufFrameSerializer(FrameSerializer):
             args_dict[field.name] = getattr(args, field.name)
 
         # Remove special fields if needed
-        id = getattr(args, "id")
-        name = getattr(args, "name")
-        pts = getattr(args, "pts")
-        if not id:
+        id = getattr(args, "id", None)
+        name = getattr(args, "name", None)
+        pts = getattr(args, "pts", None)
+        if not id and "id" in args_dict:
             del args_dict["id"]
-        if not name:
+        if not name and "name" in args_dict:
             del args_dict["name"]
-        if not pts:
+        if not pts and "pts" in args_dict:
             del args_dict["pts"]
 
         # Create the instance
@@ -105,10 +104,10 @@ class ProtobufFrameSerializer(FrameSerializer):
 
         # Set special fields
         if id:
-            setattr(instance, "id", getattr(args, "id"))
+            setattr(instance, "id", getattr(args, "id", None))
         if name:
-            setattr(instance, "name", getattr(args, "name"))
+            setattr(instance, "name", getattr(args, "name", None))
         if pts:
-            setattr(instance, "pts", getattr(args, "pts"))
+            setattr(instance, "pts", getattr(args, "pts", None))
 
         return instance
