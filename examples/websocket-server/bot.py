@@ -8,19 +8,23 @@ import asyncio
 import os
 import sys
 
+import aiohttp
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import LLMMessagesFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
-from pipecat.services.cartesia import CartesiaTTSService
-from pipecat.services.deepgram import DeepgramSTTService
+# from pipecat.services.cartesia import CartesiaTTSService
+# from pipecat.services.deepgram import DeepgramSTTService
+from pipecat.services.whisper import WhisperSTTService, Model
 from pipecat.services.openai import OpenAILLMService
 from pipecat.transports.network.websocket_server import (
     WebsocketServerParams,
     WebsocketServerTransport,
 )
+
+from styletts2 import StyleTTS2Service
 
 from loguru import logger
 
@@ -32,7 +36,7 @@ logger.remove(0)
 logger.add(sys.stderr, level="DEBUG")
 
 
-async def main():
+async def main(session):
     transport = WebsocketServerTransport(
         params=WebsocketServerParams(
             audio_out_sample_rate=16000,
@@ -44,20 +48,32 @@ async def main():
         )
     )
 
-    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o")
+    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o-mini")
 
-    stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
+    # stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
+    stt = WhisperSTTService(model=Model.BASE,)
 
-    tts = CartesiaTTSService(
-        api_key=os.getenv("CARTESIA_API_KEY"),
-        voice_id="79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
+    # tts = CartesiaTTSService(
+    #     api_key=os.getenv("CARTESIA_API_KEY"),
+    #     voice_id="79a125e8-cd45-4c13-8a67-188112f4dd22",  # British Lady
+    #     sample_rate=16000,
+    # )
+    tts = StyleTTS2Service(
+        base_url='http://localhost:8014',
+        aiohttp_session=session,
         sample_rate=16000,
     )
 
     messages = [
         {
             "role": "system",
-            "content": "You are a helpful LLM in a WebRTC call. Your goal is to demonstrate your capabilities in a succinct way. Your output will be converted to audio so don't include special characters in your answers. Respond to what the user said in a creative and helpful way.",
+            "content": """
+                You are a helpful LLM in a WebRTC call. 
+                Your goal is to demonstrate your capabilities in a succinct way. 
+                Your output will be converted to audio so don't include special characters in your answers. 
+                Respond to what the user said in a creative and helpful way. 
+                **Use only Korean.**
+            """,
         },
     ]
 
@@ -88,6 +104,9 @@ async def main():
 
     await runner.run(task)
 
+async def main_with_session():
+    async with aiohttp.ClientSession() as session:
+        await main(session)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(main_with_session())
